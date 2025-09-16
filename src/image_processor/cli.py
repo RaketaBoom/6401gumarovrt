@@ -1,6 +1,7 @@
 import argparse
 import sys
-from image_processor import ImageProcessor
+from .image_processor import ImageProcessor
+import numpy as np
 
 
 def main():

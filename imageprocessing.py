@@ -3,7 +3,7 @@
 Консольное приложение для обработки изображений.
 """
 
-from cli import main
+from src.image_processor.cli import main
 
 if __name__ == '__main__':
     main()
