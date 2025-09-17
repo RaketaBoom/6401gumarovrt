@@ -1,7 +1,24 @@
+"""
+Модуль для обработки изображений с использованием OpenCV и NumPy.
+
+Предоставляет класс ImageProcessor выполнения различных операций обработки изображений:
+- свёртка изображения с произвольным ядром
+- преобразование RGB-изображения в оттенки серого
+- гамма-коррекция
+- обнаружение границ (оператор Собеля)
+- обнаружение углов (детектор Харриса)
+- обнаружение окружностей (преобразование Хафа - не реализовано)
+
+Все операции выполняются с использованием NumPy без готовых функций OpenCV
+для основных алгоритмов обработки.
+"""
+
 import time
-from typing import Optional, Tuple
-import numpy as np
+from typing import Any, Callable, NoReturn, Optional
+
 import cv2
+
+import numpy as np
 
 
 class ImageProcessor:
@@ -20,7 +37,7 @@ class ImageProcessor:
     для основных алгоритмов обработки.
     """
 
-    def __init__(self, image_path: str):
+    def __init__(self: 'ImageProcessor', image_path: str) -> None:
         """
         Инициализация процессора изображений.
 
@@ -40,7 +57,12 @@ class ImageProcessor:
         self.result_image: Optional[np.ndarray] = None
         self.execution_time: float = 0.0
 
-    def measure_time(self, func, *args, **kwargs) -> None:
+    def measure_time(
+            self: 'ImageProcessor',
+            func: Callable[..., Any],
+            *args: Any,
+            **kwargs: Any,
+    ) -> Any:
         """
         Измеряет время выполнения функции.
 
@@ -58,7 +80,7 @@ class ImageProcessor:
         self.execution_time = end_time - start_time
         return result
 
-    def _rgb_to_grayscale(self, image: np.ndarray) -> np.ndarray:
+    def _rgb_to_grayscale(self: 'ImageProcessor', image: np.ndarray) -> np.ndarray:
         """
         Преобразует RGB-изображение в оттенки серого.
 
@@ -74,7 +96,11 @@ class ImageProcessor:
                        0.587 * image[:, :, 1] +
                        0.114 * image[:, :, 2], 0, 255).astype(np.uint8)
 
-    def _convolution2d(self, image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+    def _convolution2d(
+            self: 'ImageProcessor',
+            image: np.ndarray,
+            kernel: np.ndarray,
+    ) -> np.ndarray:
         """
         Выполняет 2D свертку изображения с ядром.
 
@@ -96,19 +122,20 @@ class ImageProcessor:
 
         # Применяем свертку
         for i in range(image.shape[0]):
-            for j in range(image.shape[1]):
-                region = padded[i:i + k_h, j:j + k_w]
-                output[i, j] = np.sum(region * kernel)
+            for col in range(image.shape[1]):
+                region = padded[i:i + k_h, col:col + k_w]
+                output[i, col] = np.sum(region * kernel)
 
         return output
 
-    def to_grayscale(self) -> None:
+    def to_grayscale(self: 'ImageProcessor') -> None:
         """
         Преобразует цветное изображение в полутоновое.
 
         Время выполнения операции измеряется и выводится в консоль.
         """
-        def _convert():
+        def _convert() -> None:
+            """Внутренняя функция для преобразования в оттенки серого."""
             if len(self.image.shape) == 3:
                 self.result_image = self._rgb_to_grayscale(self.image)
             else:
@@ -118,7 +145,7 @@ class ImageProcessor:
         self.measure_time(_convert)
         print(f"Grayscale conversion took {self.execution_time:.4f} seconds")
 
-    def gamma_correction(self, gamma: float) -> None:
+    def gamma_correction(self: 'ImageProcessor', gamma: float) -> None:
         """
         Применяет гамма-коррекцию к изображению.
 
@@ -133,7 +160,8 @@ class ImageProcessor:
         if gamma <= 0:
             raise ValueError("Gamma must be greater than 0")
 
-        def _correct():
+        def _correct() -> None:
+            """Внутренняя функция для применения гамма-коррекции."""
             # Нормализуем изображение к диапазону 0-1
             img_float = self.image.astype(np.float32) / 255.0
 
@@ -146,7 +174,7 @@ class ImageProcessor:
         self.measure_time(_correct)
         print(f"Gamma correction took {self.execution_time:.4f} seconds")
 
-    def apply_convolution(self, kernel: np.ndarray) -> None:
+    def apply_convolution(self: 'ImageProcessor', kernel: np.ndarray) -> None:
         """
         Применяет свертку с заданным ядром.
 
@@ -155,7 +183,8 @@ class ImageProcessor:
 
         Время выполнения операции измеряется и выводится в консоль.
         """
-        def _convolve():
+        def _convolve() -> None:
+            """Внутренняя функция для применения свертки."""
             # Получаем размеры изображения и ядра
             img_h, img_w = self.image.shape[:2]
             k_h, k_w = kernel.shape
@@ -171,22 +200,28 @@ class ImageProcessor:
 
             # Добавляем padding к изображению
             if len(self.image.shape) == 3:
-                padded = np.pad(self.image, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)),
-                                mode='reflect')
+                padded = np.pad(
+                    self.image,
+                    ((pad_h, pad_h), (pad_w, pad_w), (0, 0)),
+                    mode='reflect',
+                )
             else:
-                padded = np.pad(self.image, ((pad_h, pad_h), (pad_w, pad_w)),
-                                mode='reflect')
+                padded = np.pad(
+                    self.image,
+                    ((pad_h, pad_h), (pad_w, pad_w)),
+                    mode='reflect',
+                )
 
             # Применяем свертку
             for i in range(img_h):
-                for j in range(img_w):
+                for col in range(img_w):
                     if len(self.image.shape) == 3:
-                        for c in range(3):  # Для каждого канала (R, G, B)
-                            region = padded[i:i+k_h, j:j+k_w, c]
-                            output[i, j, c] = np.sum(region * kernel)
+                        for channel in range(3):  # Для каждого канала (R, G, B)
+                            region = padded[i:i+k_h, col:col+k_w, channel]
+                            output[i, col, channel] = np.sum(region * kernel)
                     else:
-                        region = padded[i:i+k_h, j:j+k_w]
-                        output[i, j] = np.sum(region * kernel)
+                        region = padded[i:i+k_h, col:col+k_w]
+                        output[i, col] = np.sum(region * kernel)
 
             # Обрезаем значения до диапазона 0-255
             output = np.clip(output, 0, 255).astype(np.uint8)
@@ -195,13 +230,14 @@ class ImageProcessor:
         self.measure_time(_convolve)
         print(f"Convolution took {self.execution_time:.4f} seconds")
 
-    def sobel_edge_detection(self) -> None:
+    def sobel_edge_detection(self: 'ImageProcessor') -> None:
         """
         Выделяет границы с помощью оператора Собеля.
 
         Время выполнения операции измеряется и выводится в консоль.
         """
-        def _detect_edges():
+        def _detect_edges() -> None:
+            """Внутренняя функция для обнаружения границ Собелем."""
             # Преобразуем в grayscale, если нужно
             if len(self.image.shape) == 3:
                 gray = self._rgb_to_grayscale(self.image)
@@ -211,8 +247,14 @@ class ImageProcessor:
             gray_float = gray.astype(np.float32)
 
             # Операторы Собеля
-            sobel_x = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=np.float32)
-            sobel_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=np.float32)
+            sobel_x = np.array(
+                [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
+                dtype=np.float32,
+            )
+            sobel_y = np.array(
+                [[-1, -2, -1], [0, 0, 0], [1, 2, 1]],
+                dtype=np.float32,
+            )
 
             # Применяем свертки
             grad_x = self._convolution2d(gray_float, sobel_x)
@@ -224,18 +266,20 @@ class ImageProcessor:
             # Нормализуем к диапазону 0-255
             if magnitude.max() > 0:
                 magnitude = (magnitude / magnitude.max()) * 255
+
             self.result_image = magnitude.astype(np.uint8)
 
         self.measure_time(_detect_edges)
         print(f"Sobel edge detection took {self.execution_time:.4f} seconds")
 
-    def harris_corner_detection(self) -> None:
+    def harris_corner_detection(self: 'ImageProcessor') -> None:
         """
         Выполняет обнаружение углов на изображении с помощью детектора Харриса.
 
         Время выполнения операции измеряется и выводится в консоль.
         """
-        def _detect_corners():
+        def _detect_corners() -> None:
+            """Внутренняя функция для обнаружения углов Харрисом."""
             # 1. Конвертируем в оттенки серого
             if len(self.image.shape) == 3:
                 gray = self._rgb_to_grayscale(self.image).astype(np.float32)
@@ -243,58 +287,81 @@ class ImageProcessor:
                 gray = self.image.astype(np.float32)
 
             # 2. Вычисляем производные
-            sobel_x = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=np.float32)
-            sobel_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=np.float32)
+            sobel_x = np.array(
+                [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
+                dtype=np.float32,
+            )
+            sobel_y = np.array(
+                [[-1, -2, -1], [0, 0, 0], [1, 2, 1]],
+                dtype=np.float32,
+            )
 
-            Ix = self._convolution2d(gray, sobel_x)
-            Iy = self._convolution2d(gray, sobel_y)
+            ix = self._convolution2d(gray, sobel_x)
+            iy = self._convolution2d(gray, sobel_y)
 
             # 3. Вычисляем элементы матрицы структуры
-            Ix2 = Ix * Ix
-            Iy2 = Iy * Iy
-            Ixy = Ix * Iy
+            ix2 = ix * ix
+            iy2 = iy * iy
+            ixy = ix * iy
 
             # 4. Гауссово сглаживание
-            gaussian_kernel = np.array([[1, 2, 1],
-                                        [2, 4, 2],
-                                        [1, 2, 1]], dtype=np.float32) / 16.0
+            gaussian_kernel = np.array(
+                [[1, 2, 1], [2, 4, 2], [1, 2, 1]],
+                dtype=np.float32,
+            ) / 16.0
 
-            Sx2 = self._convolution2d(Ix2, gaussian_kernel)
-            Sy2 = self._convolution2d(Iy2, gaussian_kernel)
-            Sxy = self._convolution2d(Ixy, gaussian_kernel)
+            sx2 = self._convolution2d(ix2, gaussian_kernel)
+            sy2 = self._convolution2d(iy2, gaussian_kernel)
+            sxy = self._convolution2d(ixy, gaussian_kernel)
 
             # 5. Вычисляем отклик Харриса
-            k = 0.04
-            det = Sx2 * Sy2 - Sxy * Sxy
-            trace = Sx2 + Sy2
-            R = det - k * trace * trace
+            k_value = 0.04
+            det = sx2 * sy2 - sxy * sxy
+            trace = sx2 + sy2
+            response = det - k_value * trace * trace
 
             # 6. Нормализация
-            R_norm = (R - np.min(R)) / (np.max(R) - np.min(R))
+            response_min = np.min(response)
+            response_max = np.max(response)
+            response_norm = (response - response_min) / (response_max - response_min)
 
             # 7. Адаптивный подбор порога
-            def find_adaptive_threshold(R_norm, target_corners=1000):
-                """Автоматически подбирает порог для получения нужного количества углов"""
-                sorted_response = np.sort(R_norm.flatten())[::-1]
+            def find_adaptive_threshold(
+                    r_norm: np.ndarray,
+                    target_corners: int = 1000,
+            ) -> float:
+                """
+                Автоматически подбирает порог для получения нужного количества углов.
+
+                Args:
+                    r_norm: Нормализованный отклик Харриса
+                    target_corners: Целевое количество углов
+
+                Returns:
+                    Пороговое значение
+                """
+                sorted_response = np.sort(r_norm.flatten())[::-1]
                 if len(sorted_response) > target_corners:
                     threshold = sorted_response[target_corners]
+
                 else:
                     threshold = sorted_response[-1] if len(sorted_response) > 0 else 0.5
+
                 return max(0.1, min(0.9, threshold))
 
-            threshold = find_adaptive_threshold(R_norm, target_corners=1000)
-            corner_mask = R_norm > threshold
+            threshold = find_adaptive_threshold(response_norm, target_corners=1000)
+            corner_mask = response_norm > threshold
 
             # 8. Подавление немаксимумов
-            height, width = R.shape
+            height, width = response.shape
             local_maxima = np.zeros_like(corner_mask, dtype=bool)
 
             for i in range(1, height - 1):
-                for j in range(1, width - 1):
-                    if corner_mask[i, j]:
-                        neighborhood = R_norm[i - 1:i + 2, j - 1:j + 2]
-                        if R_norm[i, j] == np.max(neighborhood):
-                            local_maxima[i, j] = True
+                for col in range(1, width - 1):
+                    if corner_mask[i, col]:
+                        neighborhood = response_norm[i - 1:i + 2, col - 1:col + 2]
+                        if response_norm[i, col] == np.max(neighborhood):
+                            local_maxima[i, col] = True
 
             # 9. Создаем результат
             result = self.image.copy().astype(np.uint8)
@@ -302,11 +369,11 @@ class ImageProcessor:
             # 10. Рисуем углы
             corner_coords = np.where(local_maxima)
             if len(corner_coords[0]) > 0:
-                for y, x in zip(corner_coords[0], corner_coords[1]):
-                    y_start = max(0, y - 1)
-                    y_end = min(height, y + 2)
-                    x_start = max(0, x - 1)
-                    x_end = min(width, x + 2)
+                for y_coord, x_coord in zip(corner_coords[0], corner_coords[1]):
+                    y_start = max(0, y_coord - 1)
+                    y_end = min(height, y_coord + 2)
+                    x_start = max(0, x_coord - 1)
+                    x_end = min(width, x_coord + 2)
 
                     result[y_start:y_end, x_start:x_end, 0] = 255  # Красный
                     result[y_start:y_end, x_start:x_end, 1] = 0    # Зеленый
@@ -317,22 +384,20 @@ class ImageProcessor:
         self.measure_time(_detect_corners)
         print(f"Harris corner detection took {self.execution_time:.4f} seconds")
 
-    def hough_circle_detection(self) -> None:
+    def hough_circle_detection(self: 'ImageProcessor') -> None:
         """
         Выполняет обнаружение окружностей на изображении.
 
         Note:
             Метод пока не реализован.
-
-        Raises:
-            NotImplementedError: Всегда, так как метод не реализован
         """
-        def _detect_circles():
+        def _detect_circles() -> NoReturn:
+            """Внутренняя функция для обнаружения окружностей."""
             raise NotImplementedError("Метод обнаружения окружностей пока не реализован.")
 
         self.measure_time(_detect_circles)
 
-    def save_result(self, output_path: str) -> None:
+    def save_result(self: 'ImageProcessor', output_path: str) -> None:
         """
         Сохраняет обработанное изображение.
 

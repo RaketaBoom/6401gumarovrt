@@ -1,24 +1,48 @@
+"""
+Модуль командной строки для обработки изображений.
+
+Предоставляет интерфейс командной строки для выполнения различных операций
+над изображениями, включая преобразование в градации серого, гамма-коррекцию,
+свертку, обнаружение границ и углов.
+"""
+
 import argparse
 import sys
-from .image_processor import ImageProcessor
+from typing import NoReturn
+
 import numpy as np
 
+from .image_processor import ImageProcessor
 
-def main():
+
+def main() -> NoReturn:
     """Основная функция для обработки аргументов командной строки."""
     parser = argparse.ArgumentParser(description='Image Processing Tool')
 
     # Добавляем аргументы
-    parser.add_argument('operation',
-                        choices=['grayscale', 'gamma', 'convolution', 'sobel', 'harris', 'hough'],
-                        help='Operation to perform')
+    parser.add_argument(
+        'operation',
+        choices=['grayscale', 'gamma', 'convolution', 'sobel', 'harris', 'hough'],
+        help='Operation to perform',
+    )
     parser.add_argument('input_path', help='Path to input image')
-    parser.add_argument('output_path', nargs='?', default='output.png',
-                        help='Path to save output image (default: output.png)')
-    parser.add_argument('--gamma', type=float, default=1.0,
-                        help='Gamma value for correction (default: 1.0)')
-    parser.add_argument('--kernel', type=str,
-                        help='Convolution kernel as comma-separated values')
+    parser.add_argument(
+        'output_path',
+        nargs='?',
+        default='output.png',
+        help='Path to save output image (default: output.png)',
+    )
+    parser.add_argument(
+        '--gamma',
+        type=float,
+        default=1.0,
+        help='Gamma value for correction (default: 1.0)',
+    )
+    parser.add_argument(
+        '--kernel',
+        type=str,
+        help='Convolution kernel as comma-separated values',
+    )
 
     # Парсим аргументы
     args = parser.parse_args()
@@ -42,6 +66,7 @@ def main():
             if size * size != len(kernel_values):
                 print("Error: Kernel must be square")
                 sys.exit(1)
+
             kernel = np.array(kernel_values).reshape((size, size))
             processor.apply_convolution(kernel)
         elif args.operation == 'sobel':

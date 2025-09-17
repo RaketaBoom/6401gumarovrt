@@ -1,5 +1,12 @@
+"""
+Модуль вспомогательных функций для обработки изображений.
+
+Содержит утилиты для работы с ядрами свертки и другими вспомогательными операциями.
+"""
+
+from typing import Tuple
+
 import numpy as np
-from typing import List, Tuple
 
 
 def parse_kernel(kernel_str: str) -> np.ndarray:
@@ -11,11 +18,15 @@ def parse_kernel(kernel_str: str) -> np.ndarray:
 
     Returns:
         Ядро свертки как 2D массив NumPy
+
+    Raises:
+        ValueError: Если ядро не является квадратным
     """
     values = [float(x) for x in kernel_str.split(',')]
     size = int(len(values) ** 0.5)
     if size * size != len(values):
         raise ValueError("Kernel must be square")
+
     return np.array(values).reshape((size, size))
 
 
