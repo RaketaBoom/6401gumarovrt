@@ -47,8 +47,7 @@ def main():
         elif args.operation == 'sobel':
             processor.sobel_edge_detection()
         elif args.operation == 'harris':
-            print("Harris corner detection not implemented yet")
-            sys.exit(1)
+            processor.harris_corner_detection()
         elif args.operation == 'hough':
             print("Hough circle detection not implemented yet")
             sys.exit(1)
