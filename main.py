@@ -12,20 +12,6 @@ main.py
 
 Запуск:
     python main.py <метод> <путь_к_изображению> [-o путь_для_сохранения]
-
-Аргументы:
-    метод: edges | corners | circles
-    путь_к_изображению: путь к входному изображению
-    -o, --output: путь для сохранения результата
-     (по умолчанию: <имя_входного_файла>_result.png)
-    -i,  --impl: выбор реализации - lib (стандартная) или custom (пользовательская)
-     (по умолчанию: lib)
-
-Пример:
-    python main.py edges input.jpg
-    python main.py corners input.jpg -o corners_result.png
-
-Автор: Жиляев Максим
 """
 
 import argparse
