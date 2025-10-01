@@ -20,6 +20,8 @@ import cv2
 
 import numpy as np
 
+from src.image_processor.utils import get_sobel_kernels
+
 
 class ImageProcessor:
     """
@@ -92,7 +94,7 @@ class ImageProcessor:
         Returns:
             Одноканальное изображение в оттенках серого
         """
-        return np.clip(0.299 * image[:, :, 0] +
+        return np.clip(0.299 * image[:, :, 0] + # - ограничивает значения в диапазоне [0, 255]
                        0.587 * image[:, :, 1] +
                        0.114 * image[:, :, 2], 0, 255).astype(np.uint8)
 
@@ -115,7 +117,7 @@ class ImageProcessor:
         pad_h, pad_w = k_h // 2, k_w // 2
 
         # Добавляем padding
-        padded = np.pad(image, ((pad_h, pad_h), (pad_w, pad_w)), mode='reflect')
+        padded = np.pad(image, ((pad_h, pad_h), (pad_w, pad_w)), mode='reflect') # добавляем края (зеркалим)
 
         # Создаем выходной массив
         output = np.zeros_like(image)
@@ -247,14 +249,7 @@ class ImageProcessor:
             gray_float = gray.astype(np.float32)
 
             # Операторы Собеля
-            sobel_x = np.array(
-                [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
-                dtype=np.float32,
-            )
-            sobel_y = np.array(
-                [[-1, -2, -1], [0, 0, 0], [1, 2, 1]],
-                dtype=np.float32,
-            )
+            sobel_x, sobel_y = get_sobel_kernels()
 
             # Применяем свертки
             grad_x = self._convolution2d(gray_float, sobel_x)
@@ -282,9 +277,9 @@ class ImageProcessor:
             """Внутренняя функция для обнаружения углов Харрисом."""
             # 1. Конвертируем в оттенки серого
             if len(self.image.shape) == 3:
-                gray = self._rgb_to_grayscale(self.image).astype(np.float32)
+                gray = self._rgb_to_grayscale(self.image)
             else:
-                gray = self.image.astype(np.float32)
+                gray = self.image
 
             # 2. Вычисляем производные
             sobel_x = np.array(
@@ -383,19 +378,6 @@ class ImageProcessor:
 
         self.measure_time(_detect_corners)
         print(f"Harris corner detection took {self.execution_time:.4f} seconds")
-
-    def hough_circle_detection(self: 'ImageProcessor') -> None:
-        """
-        Выполняет обнаружение окружностей на изображении.
-
-        Note:
-            Метод пока не реализован.
-        """
-        def _detect_circles() -> NoReturn:
-            """Внутренняя функция для обнаружения окружностей."""
-            raise NotImplementedError("Метод обнаружения окружностей пока не реализован.")
-
-        self.measure_time(_detect_circles)
 
     def save_result(self: 'ImageProcessor', output_path: str) -> None:
         """

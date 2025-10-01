@@ -9,3 +9,6 @@ python imageprocessing.py convolution images/input/photo.jpg images/output/blur.
 
 ### Обнаружение границ Собелем
 python imageprocessing.py sobel images/input/photo.jpg images/output/edges.jpg
+
+# Обнаружение углов Харрисом
+python imageprocessing.py harris images/input/photo.jpg images/output/edges.jpg

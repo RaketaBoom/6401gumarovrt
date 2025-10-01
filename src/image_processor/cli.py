@@ -10,8 +10,7 @@ import argparse
 import sys
 from typing import NoReturn
 
-import numpy as np
-
+from src.image_processor.utils import parse_kernel
 from .image_processor import ImageProcessor
 
 
@@ -61,13 +60,7 @@ def main() -> NoReturn:
                 print("Error: Kernel required for convolution")
                 sys.exit(1)
             # Парсим ядро
-            kernel_values = [float(x) for x in args.kernel.split(',')]
-            size = int(len(kernel_values) ** 0.5)
-            if size * size != len(kernel_values):
-                print("Error: Kernel must be square")
-                sys.exit(1)
-
-            kernel = np.array(kernel_values).reshape((size, size))
+            kernel = parse_kernel(args.kernel)
             processor.apply_convolution(kernel)
         elif args.operation == 'sobel':
             processor.sobel_edge_detection()
